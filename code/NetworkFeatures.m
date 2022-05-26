@@ -344,86 +344,52 @@ classdef NetworkFeatures < Features
         function calculaMergeAlgorithm(obj,matriz,nodos)
            limit = size(matriz);
            valores = [];
-           iteraciones = 1:1:size(1);
-           
+           iteraciones = 1:1:limit(1);
+           n_nodos = size(nodos);
+           G = graph(matriz);
+           distancias = distances(G);
            for k=1:limit(1)
-                %todo nodo es una caja
                 boxes = {};
-                limit2 = size(nodos);
-                for n=1:limit2(2)
-                    boxes{end+1,1} = nodos(1,n);
+                for i=1:n_nodos(2)
+                    boxes{end+1} = nodos(i);
                 end
+                %todo nodo es una caja
                 l = 1;
-                while l < k
+                while l <= k
                     boxes_vis = {};
-                    while (~isempty(boxes))
-                        bnum = randi(limit2(2));
-                        b = boxes{bnum,1};
-                        adj = {};
-                        cell_adj = {};
-                        for i=1:limit(1)
-                            compound_box = {};
-                            if i~=bnum
-                                subbox1 = b;
-                                subbox2 = boxes{i};
-                                compound_box = [subbox1 subbox2];   
-                                cell_box = {subbox1 subbox2};
-                                adj{end+1} = compound_box; 
-                                cell_adj{end+1} = cell_box;
-                            end
-                        end
-                        if ~isempty(adj)
-                            n_adj = size(adj);
-                            choices = {};
-                            cell_choices = {};
-                            for c=1:n_adj(2)
-                                b_size = size(adj{c});
-                                if b_size(2) <= l
-                                    choices{end+1} = adj{c};
-                                    cell_choices{end+1} = cell_adj{c};
+                    n_boxes = size(boxes);
+                    while ~isempty(boxes)
+                        bnum = randi(n_boxes(2));
+                        b = boxes(bnum);
+                        choice = obj.find_adjacents(b,boxes,l,distancias);
+                        if ~isempty(choice)
+                            %boxes_vis{end+1} = [choice{1} choice{2}];
+                            boxes_vis{end+1} = [choice{:,1} choice{:,2}];
+                            f1 = @(a) isempty(setdiff(choice{1},a)) & isempty(setdiff(a,choice{1}));
+                            f2 = @(a) isempty(setdiff(choice{2},a)) & isempty(setdiff(a,choice{2}));
+                            matches1 = cellfun(f1,boxes,'UniformOutput',false);
+                            matches2 = cellfun(f2,boxes,'UniformOutput',false);
+                            u = n_boxes(2);
+                            while u ~= 0
+                                if isequal(matches1{u},1)
+                                    boxes(u) = [];
+                                    n_boxes(2) = n_boxes(2) - 1;
+                                elseif isequal(matches2{u},1)
+                                    boxes(u) = [];
+                                    n_boxes(2) = n_boxes(2) - 1;
                                 end
-                            end
-                            %función aislada, para comparación entre celdas
-                            limit3 = size(choices);
-                            if limit3(2) > 0
-                                cnum = randi(limit3(2));
-                                choice = choices{cnum,1};
-                                cell_choice = cell_choices{cnum,1};
-                                boxes_vis{end+1} = choice{1};
-                                f1 = @(a) a == cell_choice{1};
-                                f2 = @(a) a == cell_choice{2};
-                                members1 = cellfun(f1,boxes,'UniformOutput',false);
-                                members2 = cellfun(f2,boxes,'UniformOutput',false);
-                                m_size = size(members1);
-                                for q=1:m_size(1)
-                                    if ~ismember(0,members1{q})
-                                        boxes(q) = [];
-                                        members1(q) = [];
-                                        members2(q) = [];
-                                        m_size(1) = m_size(1) - 1;
-                                    end
-                                    if ~ismember(0,members2{q})
-                                        boxes(q) = [];
-                                        members1(q) = [];
-                                        members2(q) = [];
-                                        m_size(1) = m_size(1) - 1;
-                                    end
-                                end
+                                u = u - 1;
                             end
                         else
-                            boxes_vis{end+1} = b;
-                            cand_size = size(boxes);
-                            for u=1:cand_size(1)
-                                if isequal(b,boxes{u})
-                                    boxes(u) = [];
-                                    cand_size = cand_size -1;
-                                end
-                            end
+                            boxes_vis{end+1} = b{:};
+                            boxes(bnum) = [];
+                            n_boxes(2) = n_boxes(2) - 1;
                         end
                     end
                     boxes = boxes_vis;
                     l = l + 1;
                 end
+                boxes
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
            end
@@ -536,6 +502,67 @@ classdef NetworkFeatures < Features
             dtt.DataTipRows(1).Value = Lb;
             dtt.DataTipRows(2).Label = "Nb";
             dtt.DataTipRows(2).Value = Nb;
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        %Cálculo de las posibles cajas adyacentes para algoritmo merge
+        function choice = find_adjacents(obj,b,boxes,l,distances)
+            num_boxes = size(boxes);
+            tamb = size(b{:});
+            valid_boxes = {};
+            bwascell = false;
+            if isa(b,'cell') || tamb(2) > 1
+                bwascell = true;
+                b = b{:};
+            end
+            for i=1:num_boxes(2)
+                tamc = size(boxes{i});
+                mergeable = true;
+                cwascell = false;
+                compbox = boxes(i);
+                
+                if isa(compbox,'cell') || tamc(2) > 1
+                    compbox = compbox{:};
+                    cwascell = true;
+                end
+                
+                for j=1:tamb(2)
+                    for k=1:tamc(2)
+                        if bwascell
+                            bvalue = b(j);
+                        elseif ~bwascell
+                            bvalue = b{j};
+                        end
+                        
+                        if cwascell
+                            cvalue = compbox(k);
+                        elseif ~cwascell
+                            cvalue = compbox{k};
+                        end
+                        if cvalue == bvalue || distances(cvalue,bvalue) > l
+                            mergeable = false;
+                        end
+                    end
+                end
+                
+                if ~cwascell && isa(compbox,'cell')
+                    compbox = compbox{:};
+                end
+                if ~bwascell && isa(b,'cell')
+                    b = b{:};
+                end
+                if mergeable
+                    valid_boxes{end+1} = {compbox b};
+                end
+            end
+            tam_vb = size(valid_boxes);
+            if tam_vb(2) > 0
+                choicenum = randi(tam_vb(2));
+                choice = valid_boxes{choicenum};
+            else
+                choice = {};
+            end
         end
         %%%%%%%%%
         
