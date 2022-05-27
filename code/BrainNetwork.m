@@ -166,11 +166,12 @@ classdef BrainNetwork < handle
         function calculaMergeAlgorithm(obj)
             nodos = obj.getNombreNodos();
             limit = size(nodos);
+            othernodes = [1:1:limit(2)];
             for i=1:limit(2)
                 nombreNodo = nodos(1,i);
-                nodos(2,i) = obj.correspondenciaNodoId(nombreNodo);
+                nodos(2,i) = i;
             end
-            obj.features.calculaMergeAlgorithm(obj.matriz,nodos);
+            obj.features.calculaMergeAlgorithm(obj.matriz,othernodes);
         end
         
         %Función para cargar el archivo de coordenadas 3D
