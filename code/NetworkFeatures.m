@@ -347,7 +347,7 @@ classdef NetworkFeatures < Features
            iteraciones = 1:1:limit(1);
            n_nodos = size(nodos);
            G = graph(matriz);
-           distancias = distances(G);
+           distancias = distances(G)
            for k=1:limit(1)
                 boxes = {};
                 for i=1:n_nodos(2)
@@ -418,6 +418,104 @@ classdef NetworkFeatures < Features
         end
         %%%%%%%%%
         
+        %%%%%%%%%%
+        %Funcion para calcular el box-covering con el método overlapping
+        %box-covering algorithm
+        
+        function calculaOBCA(obj,matriz,nodos)
+            limit = size(matriz);
+            valores = [];
+            iteraciones = 1:1:limit(1);
+            n_nodos = size(nodos);
+            G = graph(matriz);
+            distancias = distances(G);
+            for k=1:limit(1)
+                boxes = {};
+                n_nodes = size(nodos);
+                f = zeros(1,n_nodes(2));
+                nd = obj.get_degree(matriz);
+                aux_m = [nodos;f;nd];
+                [temp,idx] = sort(aux_m(3,:));
+                full_m = aux_m(:,idx);
+                
+                for n=1:n_nodes(2)
+                    if full_m(2,n) > 0
+                        continue;
+                    end
+                    %node has relative frequency = 0, so it's a center node for a
+                    %candidate box, build said box around the node with distance k
+                    box = obj.build_c_box(n,k,full_m,distancias);
+                    [temp2,idx2] = sort(box(2,:));
+                    C_box = box(:,idx2); %sort by f (2nd row)
+                    tam_cb = size(C_box);
+                    for i=1:tam_cb(2)
+                        if ~ismember(C_box(1,i),box(1))
+                            continue;
+                        end
+                        for j=i+1:tam_cb(2)
+                            if distancias(C_box(1,i),C_box(1,j)) > k
+                                if C_box(1,j) == full_m(1,n)
+                                    box = box(:,box(1,:)~=C_box(1,i));
+                                    break
+                                else
+                                    box = box(:,box(1,:)~=C_box(1,j));
+                                end
+                            end
+                        end
+                    end
+                    for p=1:tam_cb(2)
+                        fidx = find(full_m(1,:) == box(1,p));
+                        full_m(2,fidx) = full_m(2,fidx) + 1;
+                    end
+                    boxes{end+1} = double(box(1,:));
+                end
+                numbox = size(boxes);
+                for l=1:numbox(2)
+                    uniquebox = false;
+                    curr_b = boxes{l};
+                    scb = size(curr_b);
+                    for j=1:scb(2)
+                        bidx = find(full_m(1,:) == curr_b(j));
+                        if full_m(2,bidx) < 2
+                            uniquebox = true;
+                            break;
+                        end
+                    end
+                    if ~uniquebox
+                        boxes(l) = [];
+                        for j=1:scb(2)
+                            bidx2 = find(full_m(1,:) == curr_b(j));
+                            full_m(2,bidx2) = full_m(2,bidx2) - 1;
+                        end
+                    end
+                end
+                num_boxes = size(boxes);
+                valores(k) = num_boxes(2);
+            end
+            obj.boxCovering = valores;
+    
+            x = iteraciones;
+            y = obj.boxCovering(iteraciones);
+    
+            Lb = x;
+            Nb = y;
+    
+            N = log10(Nb)';
+            R = log10(Lb)';
+            figure;
+            set(gcf,'color',[1 1 1]);
+            set(gca, 'FontSize',15);
+            p = scatter(R,N,'filled');
+            title("Escala de cajas");
+            hold on;
+    
+            dtt = p.DataTipTemplate;
+            dtt.DataTipRows(1).Label = "Lb";
+            dtt.DataTipRows(1).Value = Lb;
+            dtt.DataTipRows(2).Label = "Nb";
+            dtt.DataTipRows(2).Value = Nb;
+        end
+        %%%%%%%%%%
         
         
         %%%%%%%%%
@@ -504,6 +602,33 @@ classdef NetworkFeatures < Features
             dtt.DataTipRows(2).Value = Nb;
         end
         %%%%%%%%%
+        
+        %%%%%%%%%
+        %Devuelve el grado de los nodos
+        function degrees = get_degree(obj,matriz)
+            tamm = size(matriz);
+            degrees = zeros(1,tamm(1));
+            
+            for i=1:tamm(1)
+                degrees(1,i) = nnz(matriz(i,:));
+            end
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        %Construye una caja según distancia a un nodo central
+        function box = build_c_box(obj,n,k,full_m,distancias)
+            box = int16.empty(3,0);
+            n_el = full_m(1,n);
+            box(:,end+1) = full_m(:,n);
+            tami = size(full_m);
+            for i=1:tami(2)
+                ni = full_m(1,i);
+                if n_el~=ni && distancias(n_el,ni) <= k
+                    box(:,end+1) = full_m(:,i);
+                end
+            end
+        end
         
         %%%%%%%%%
         %Cálculo de las posibles cajas adyacentes para algoritmo merge

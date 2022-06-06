@@ -160,6 +160,11 @@ classdef dataControler < handle
             obj.red.calculaMergeAlgorithm();
         end
         
+        %Calculo de la escala de dimension fractal con OBC algorithm
+        function calculaOBCA(obj)
+            obj.red.calculaOBCA();
+        end
+        
         %Calculo de la dimensión fractal
         function dimFractal = calculaPendienteEscalaCajas(obj,lb_min,lb_max)
             dimFractal = obj.red.calculaPendienteEscalaCajas(lb_min,lb_max);

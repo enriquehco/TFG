@@ -163,6 +163,7 @@ classdef BrainNetwork < handle
             obj.features.calculaRandomSequential(obj.matriz,nodos);
         end
         
+        %Funcion para calcular la dimension fractal (con Merge algorithm)
         function calculaMergeAlgorithm(obj)
             nodos = obj.getNombreNodos();
             limit = size(nodos);
@@ -172,6 +173,14 @@ classdef BrainNetwork < handle
                 nodos(2,i) = i;
             end
             obj.features.calculaMergeAlgorithm(obj.matriz,othernodes);
+        end
+        
+        %Funcion para calcular la dimension fractal (con OBCA)
+        function calculaOBCA(obj)
+            nodos = obj.getNombreNodos();
+            limit = size(nodos);
+            othernodes = [1:1:limit(2)];
+            obj.features.calculaOBCA(obj.matriz,othernodes);
         end
         
         %Función para cargar el archivo de coordenadas 3D
