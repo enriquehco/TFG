@@ -289,55 +289,6 @@ classdef NetworkFeatures < Features
             dtt.DataTipRows(2).Value = Nb;
         end
         
-        function calculaMEMB(obj,matriz,nodos)
-            limit = size(matriz);
-            valores = [];
-            iteraciones = [];
-            
-            for i=1:limit(1)
-                iteraciones(i)=i;
-            end
-            
-            G = graph(matriz);
-            distancias = distances(G);
-            
-            for k=1:limit(1)
-               U = nodos(1,:);
-               NCN = nodos(1,:);
-               CN = {};
-               max_exc_mass = 0;
-               max_exc_node;
-               %%%%
-               tamBox = k;
-               boxes = {};
-               cont = 1;
-               %%%%%
-               while(~isempty(U) && ~isempty(NCN))
-                  for l=1:limit(1)  
-                    p = randsample(C,1);
-                    id_p = obj.nameToIdNodo(p,nodos);
-                    if (ex_mass(id_p) > max_exc_mass)
-                        max_exc_mass = ex_mass(id_p);
-                        max_exc_node = id_p;
-                    end
-                  end
-                  CN = [CN max_exc_node];
-                  NCN = NCN(NCN~= max_exc_node);
-                  cov_list = calc_chem_distance(nodes,max_exc_node);
-                  U = U(U~= cov_list);
-               end
-               %once all nodes have been processed
-               central_dists = {};
-               box_ids = {};
-               for cn=1:size(CN)
-                   box_ids(cn) = cn;
-               end
-               for n=1:size(nodos(1,:))
-                   central_dists = [central_dists calc_central_dist(nameToIdNodo(n,nodos))];
-               end
-               %sort NCN according to central_dists
-            end
-        end
         %%%%%%%%%
         %Función para calcular el box-covering con el método Merge
         %Algorithm
@@ -517,6 +468,70 @@ classdef NetworkFeatures < Features
         end
         %%%%%%%%%%
         
+        %%%%%%%%%%
+        %Función para calcular el box-covering con el método maximal
+        %excluded mass burning.
+        function calculaMEMB(obj,matriz,nodos)
+            matriz(matriz~=0) = 1;
+            G = graph(matriz);
+            distancias = distances(G);
+            tammat = size(matriz);
+            valores = [];
+            iteraciones = 1:1:tammat(1);
+            
+            for k=1:tammat(2)
+                U = nodos; %list of uncovered nodes
+                C = []; %list of center nodes
+                boxes = {};
+                NCN = nodos;
+                while ~isempty(U)
+                    [p, p_box] = obj.maxexcmass(U,NCN,distancias,k); 
+                    C(end+1) = p;
+                    boxes{end+1} = p;
+                    NCN = NCN(NCN~=p);
+                    U = setdiff(U,p_box);
+                end
+                cdist = obj.calc_dists(nodos,C,distancias,k); 
+                C_bis = cdist(:,cdist(3,:)~=0);
+                cbtam = size(C_bis);
+                ctam = size(C);
+                for i=1:cbtam(2)
+                    smallers = cdist(:,cdist(3,:)<C_bis(3,i));
+                    stam = size(smallers);
+                    smaller = smallers(:,randi(stam(2)));
+                    for j=1:ctam(2)
+                        if ismember(smaller(2,:),boxes{j})
+                            boxes{j}(end+1) = C_bis(1,i);
+                        end
+                    end
+                end
+                num_boxes = size(boxes);
+                valores(k) = num_boxes(2);
+            end
+            obj.boxCovering = valores;
+    
+            x = iteraciones;
+            y = obj.boxCovering(iteraciones);
+    
+            Lb = x;
+            Nb = y;
+    
+            N = log10(Nb)';
+            R = log10(Lb)';
+            figure;
+            set(gcf,'color',[1 1 1]);
+            set(gca, 'FontSize',15);
+            p = scatter(R,N,'filled');
+            title("Escala de cajas");
+            hold on;
+    
+            dtt = p.DataTipTemplate;
+            dtt.DataTipRows(1).Label = "Lb";
+            dtt.DataTipRows(1).Value = Lb;
+            dtt.DataTipRows(2).Label = "Nb";
+            dtt.DataTipRows(2).Value = Nb;
+        end
+        %%%%%%%%%%
         
         %%%%%%%%%
         %Funcion para calcular el box-covering con el método random sequential
@@ -600,6 +615,48 @@ classdef NetworkFeatures < Features
             dtt.DataTipRows(1).Value = Lb;
             dtt.DataTipRows(2).Label = "Nb";
             dtt.DataTipRows(2).Value = Nb;
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        function [node,mbox] = maxexcmass(obj,U,NCN,distancias,k)
+            tamncn = size(NCN);
+            tamu = size(U);
+            max_mass = 0;
+            node = 0;
+            for i=1:tamncn(2)
+                ex_mass = 0;
+                curr_box = [];
+                curr_box(end+1) = NCN(i);
+                for j=1:tamu(2)
+                    if distancias(NCN(i),U(j)) <= k && U(j) ~= node
+                        ex_mass = ex_mass + 1;
+                        curr_box(end+1) = U(j);
+                    end
+                end
+                if ex_mass > max_mass
+                    node = NCN(i);
+                    max_mass = ex_mass;
+                    mbox = curr_box;
+                end
+            end
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        function mindists = calc_dists(obj,nodos,C,distancias,k)
+            tn = size(nodos);
+            tc = size(C);
+            mindists = [nodos;zeros(1,tn(2));zeros(1,tn(2))+k];
+            for i=1:tn(2)
+                for j=1:tc(2)
+                    if distancias(nodos(i),C(j)) <= mindists(3,i)
+                        mindists(3,i) = distancias(nodos(i),C(j));
+                        mindists(2,i) = C(j);
+                    end
+                end
+            end
+            mindists = sortrows(mindists',3)';
         end
         %%%%%%%%%
         
