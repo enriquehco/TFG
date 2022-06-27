@@ -182,111 +182,68 @@ classdef NetworkFeatures < Features
         end
         
         %Cálculo de dimension fractal con el algoritmo Greedy Coloring
-        function calculaGreedyColoring(obj,matriz,nodos)
+        function devuelve = calculaGreedyColoring(obj, matriz, nodos, aux_g, neigh, tb)
             limit = size(matriz);
+            threshold = 0.5;
             valores = [];
-%             iteraciones = [];
-            
-            for i=1:limit(1)
-                iteraciones(i) = i;
+            iteraciones = [1:1:limit(1)];
+            matriz(matriz>=threshold)=1;matriz(matriz<threshold)=0; 
+            if ismember(nargin,[2 3])
+                onetime=false;
+            else
+                onetime=true;
+                G_b = aux_g;
+                neighbors = neigh;
             end
-
             for k=1:limit(1)
+                if ~onetime
+                    [G_b,neighbors] = obj.auxiliary_graph(matriz,nodos,k);
+                else
+                    k = tb;
+                end
                 boxes = {};
                 cont = 1;
-                tamBox = k;
-
-                G_b = obj.calculaGrafoAuxiliar(matriz,nodos,tamBox);
-
-                nodesSorted = nodos(:,1);
-                tam1 = size(nodesSorted);
-                color(1:tam1(1)) = -1;
-        
-                edges = G_b.Edges;
-                edges = edges{:,:};
-        
-                %datasample coge una muestra aleatoria de tamaño tam1 de
-                %nodesSorted sin repetición
-                nodesSorted = datasample(nodesSorted,tam1(1),'Replace',false);
-
-                %maximo de colores usados para este tamaño de caja
-                color_max=1;
-
-                %para cada nodo del grafo
-                for l=1:tam1(1)
-                    %lista de colores adyacentes a este color
-                    adj_col = [];
-
-
-                    %lista de nodos adyacentes
-                    adj_nod = edges(find(edges(:,1)==l),2);
-
-                    %lista de nodos adyacentes (en la otra direccion del edge)
-                    adj_nod2 = edges(find(edges(:,2)==l),1);
-                    %este array indica los colores de los nodos adjacentes
-                    adj_col = color(adj_nod);
-                    adj_col2 = color(adj_nod2);
-
-                    %ciclar los posibles colores hasta encontrar el menor posible a
-                    %asignar
-                    possible_col=1;
-                    cond_met = false;
-                    while (~cond_met && possible_col <= tam1(1)) 
-                        if(~ismember(possible_col,adj_col) &&  ~ismember(possible_col,adj_col2))
-                            color(l) = possible_col;
-                            if(possible_col > color_max)
-                                color_max = possible_col;
-                            end
-                            cond_met = true;
+                colors = zeros(1,limit(1));
+                for i=1:limit(1)
+                    curr_neigh = neighbors{i};
+                    for j=1:limit(1)
+                        if ~ismember(j,colors(curr_neigh))
+                            colors(i) = j;
+                            break
                         end
-                        possible_col = possible_col+1;
-                    end     
+                    end
                 end
-%                 color_max = color_max+1;
-
-                for i=1:color_max
-                    boxes{cont,1} = nodos(color(:)==i);
-                    cont = cont+1;
+                max_col = max(colors);
+                valores(k) = max_col;
+                if onetime
+                    devuelve = max_col;
+                    break
                 end
-
-                %este condicional es para mostrar que se crean las cajas
-                %correctamente, se demuestra con k==2 cuando se realiza un coloreo
-                %de 3 colores.
-%                 if(k==2)
-%                     plot(G_b);
-%                     fprintf("tamaño de caja %d",k);
-%                     for j=1:color_max
-%                         boxes{j,1}
-%                     end
-%                 end
-
-                num_boxes = size(boxes);
-                valores(k) = num_boxes(1);
-
             end
-             
-            obj.boxCovering = valores;
-
-            x = iteraciones
-            y = obj.boxCovering(iteraciones)
-
-            Lb = x;
-            Nb = y;
-
-            N = log10(Nb)';
-            R = log10(Lb)';
-            figure;
-            set(gcf,'color',[1 1 1]);
-            set(gca, 'FontSize',15);
-            p = scatter(R, N,'filled');
-            title("Escala de cajas");
-            hold on;
-
-            dtt = p.DataTipTemplate;
-            dtt.DataTipRows(1).Label = "Lb";
-            dtt.DataTipRows(1).Value = Lb;
-            dtt.DataTipRows(2).Label = "Nb";
-            dtt.DataTipRows(2).Value = Nb;
+            if ~onetime
+                obj.boxCovering = valores;
+                
+                x = iteraciones;
+                y = obj.boxCovering(iteraciones);
+                
+                Lb = x;
+                Nb = y;
+                
+                N = log10(Nb)';
+                R = log10(Lb)';
+                figure;
+                set(gcf,'color',[1 1 1]);
+                set(gca, 'FontSize',15);
+                p = scatter(R, N,'filled');
+                title("Escala de cajas");
+                hold on;
+                
+                dtt = p.DataTipTemplate;
+                dtt.DataTipRows(1).Label = "Lb";
+                dtt.DataTipRows(1).Value = Lb;
+                dtt.DataTipRows(2).Label = "Nb";
+                dtt.DataTipRows(2).Value = Nb;
+            end
         end
         
         %%%%%%%%%
@@ -749,34 +706,36 @@ classdef NetworkFeatures < Features
         %%%%%%%%%
         
         %Cálculo de la matriz (grafo) auxiliar
-        function newgraph = calculaGrafoAuxiliar(obj,matriz,nodos,lb)
-            matriz = obj.normalizaGrafo(matriz);
-            edges = [1 1];
-            G = graph(matriz);
+        function [agraph,neighbors] = auxiliary_graph(obj,matriz,nodos,lb)
+            neighbors = {};
+            limit = size(matriz);
+            edges = [0 0];
+            nlist = [0 0];
+            G = graph(matriz)
             distancias = distances(G);
-            limit2 = size(nodos);
-    
-            for v1=1:limit2
-                %id1 = nameToIdNodo(v1,nodos);
-                for v2=1:limit2
-                    %id2 = nameToIdNodo(v2,nodos);
-                    if(obj.distanciaMayor(v1,v2,lb,distancias) && v1~=v2)
-                        if(~ismember([v2 v1],edges,'rows'))
-                            edges = [edges; [v1 v2]];
+            
+            for v1=1:limit(2)
+                for v2=1:limit(2)
+                    if(distancias(v1,v2)>lb && v1~=v2)
+                        if(~any(ismember(edges,[v2 v1],'rows')))
+                            edges(end+1,:) = [v1 v2];
                         end
+                        nlist(end+1,:) = [v1 v2];
                     end
                 end
             end
-
-            edges = edges(2:end,:);
+            edges(1,:) = [];
+            nlist(1,:) = [];
             G2 = graph;
-            G2 = addnode(G2,limit2(1));
-            s = edges(:,1);
-            t = edges(:,2);
-
-            G2 = addedge(G2,s,t);
-
-            newgraph = G2;
+            sedge = size(edges);
+            for i=1:sedge(1)
+                G2 = addedge(G2,edges(i,1),edges(i,2));
+            end
+            iedges = nlist;
+            for i=1:limit(2)
+                neighbors{end+1} = iedges(iedges(:,1)==i,2);
+            end
+            agraph = G2;
         end
         %%%%%%%%%
         
