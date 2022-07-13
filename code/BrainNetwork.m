@@ -183,12 +183,20 @@ classdef BrainNetwork < handle
             obj.features.calculaOBCA(obj.matriz,othernodes);
         end
         
-        %Funcion para calcular la dimension fractal (con OBCA)
+        %Funcion para calcular la dimension fractal (con MEMB)
         function calculaMEMB(obj)
             nodos = obj.getNombreNodos();
             limit = size(nodos);
             othernodes = [1:1:limit(2)];
             obj.features.calculaMEMB(obj.matriz,othernodes);
+        end
+        
+        %Funcion para calcular la dimension fractal (con REMCC)
+        function calculaREMCC(obj)
+            nodos = obj.getNombreNodos();
+            limit = size(nodos);
+            othernodes = [1:1:limit(2)];
+            obj.features.calculaREMCC(obj.matriz,othernodes);
         end
         
         %Función para cargar el archivo de coordenadas 3D

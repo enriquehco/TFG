@@ -170,6 +170,11 @@ classdef dataControler < handle
             obj.red.calculaMEMB();
         end
         
+        %Calculo de la escala de dimension fractal con REMCC algorithm
+        function calculaREMCC(obj)
+            obj.red.calculaREMCC();
+        end
+        
         %Calculo de la dimensión fractal
         function dimFractal = calculaPendienteEscalaCajas(obj,lb_min,lb_max)
             dimFractal = obj.red.calculaPendienteEscalaCajas(lb_min,lb_max);

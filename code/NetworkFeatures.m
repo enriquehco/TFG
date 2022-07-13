@@ -98,87 +98,52 @@ classdef NetworkFeatures < Features
                 iteraciones(i) = i;
                 for j=1:limit(1)
                     if(matriz(i,j) ~= 0)
-                       matriz(i,j) = 1; 
+                        matriz(i,j) = 1;
                     end
                 end
             end
             
             G = graph(matriz);
             distancias = distances(G);
-            nodos 
             
             %%ALGORITMO COMPACT BOX BURNING%%
-            
-                for k=1:limit(1)
-                    U = nodos(1,:);
-                    tamBox = k;
-                    boxes = {};
-                    cont = 1;
-                    
-                    while(~isempty(U))
-                        box = [];
-                        C = U;
-                        
-                        while(~isempty(C))
-                            p = randsample(C,1);
-                            id_p = obj.nameToIdNodo(p,nodos);
-                            box = [box,p];
-                            limit_3 = size(U);
-                            
-                            for j=1:limit_3(2)
-                                p_aux = U(j);
-                                id_p_aux = obj.nameToIdNodo(p_aux,nodos);
-                                if(obj.distanciaMayor(id_p,id_p_aux,tamBox,distancias) && p_aux ~= p)
-                                    C = C(C~=p_aux);
-                                end
+            for k=1:limit(1)
+                U = nodos(1,:);
+                tamBox = k;
+                boxes = {};
+                cont = 1;
+                while(~isempty(U))
+                    box = [];
+                    C = U;
+                    while(~isempty(C))
+                        p = randsample(C,1);
+                        id_p = obj.nameToIdNodo(p,nodos);
+                        box = [box,p];
+                        limit_3 = size(U);
+                        for j=1:limit_3(2)
+                            p_aux = U(j);
+                            id_p_aux = obj.nameToIdNodo(p_aux,nodos);
+                            if(obj.distanciaMayor(id_p,id_p_aux,tamBox,distancias) && p_aux ~= p)
+                                C = C(C~=p_aux);
                             end
-                            
-                            C = C(C~=p);
-                            
                         end
-                    
-                        boxes{1,cont} = box;
-                        cont = cont + 1;
-                
-                        aux = size(box);
-                        limit_2 = aux(2);
-                
-                        for l=1:limit_2
-                            U = U(U~=box(l));
-                        end
+                        C = C(C~=p);
                     end
                     
-                    num_boxes = size(boxes);
-                    valores(k) = num_boxes(2);
-                    
-                    
-                    
-                end
-                
-                obj.boxCovering = valores;
-                
-           
-           x = iteraciones;
-           y = obj.boxCovering(iteraciones);
-           
-           Lb = x;
-           Nb = y;
-           
-           N = log10(Nb)';
-           R = log10(Lb)';
-           figure;
-           set(gcf,'color',[1 1 1]);
-           set(gca, 'FontSize',15);
-           p = scatter(R, N,'filled');
-           title("Escala de cajas");
-           hold on;
+                    boxes{1,cont} = box;
+                    cont = cont + 1;
 
-           dtt = p.DataTipTemplate;
-           dtt.DataTipRows(1).Label = "Lb";
-           dtt.DataTipRows(1).Value = Lb;
-           dtt.DataTipRows(2).Label = "Nb";
-           dtt.DataTipRows(2).Value = Nb;
-           
+                    aux = size(box);
+                    limit_2 = aux(2);
+                    
+                    for l=1:limit_2
+                        U = U(U~=box(l));
+                    end
+                end
+                num_boxes = size(boxes);
+                valores(k) = num_boxes(2);
+            end
+            obj.draw_box_plot(iteraciones,valores);
         end
         
         %Cálculo de dimension fractal con el algoritmo Greedy Coloring
@@ -221,28 +186,7 @@ classdef NetworkFeatures < Features
                 end
             end
             if ~onetime
-                obj.boxCovering = valores;
-                
-                x = iteraciones;
-                y = obj.boxCovering(iteraciones);
-                
-                Lb = x;
-                Nb = y;
-                
-                N = log10(Nb)';
-                R = log10(Lb)';
-                figure;
-                set(gcf,'color',[1 1 1]);
-                set(gca, 'FontSize',15);
-                p = scatter(R, N,'filled');
-                title("Escala de cajas");
-                hold on;
-                
-                dtt = p.DataTipTemplate;
-                dtt.DataTipRows(1).Label = "Lb";
-                dtt.DataTipRows(1).Value = Lb;
-                dtt.DataTipRows(2).Label = "Nb";
-                dtt.DataTipRows(2).Value = Nb;
+                obj.draw_box_plot(iteraciones,valores);
             end
         end
         
@@ -301,28 +245,7 @@ classdef NetworkFeatures < Features
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
            end
-           obj.boxCovering = valores;
-    
-            x = iteraciones;
-            y = obj.boxCovering(iteraciones);
-    
-            Lb = x;
-            Nb = y;
-    
-            N = log10(Nb)';
-            R = log10(Lb)';
-            figure;
-            set(gcf,'color',[1 1 1]);
-            set(gca, 'FontSize',15);
-            p = scatter(R,N,'filled');
-            title("Escala de cajas");
-            hold on;
-    
-            dtt = p.DataTipTemplate;
-            dtt.DataTipRows(1).Label = "Lb";
-            dtt.DataTipRows(1).Value = Lb;
-            dtt.DataTipRows(2).Label = "Nb";
-            dtt.DataTipRows(2).Value = Nb;
+           obj.draw_box_plot(iteraciones,valores);
         end
         %%%%%%%%%
         
@@ -400,28 +323,7 @@ classdef NetworkFeatures < Features
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
             end
-            obj.boxCovering = valores;
-    
-            x = iteraciones;
-            y = obj.boxCovering(iteraciones);
-    
-            Lb = x;
-            Nb = y;
-    
-            N = log10(Nb)';
-            R = log10(Lb)';
-            figure;
-            set(gcf,'color',[1 1 1]);
-            set(gca, 'FontSize',15);
-            p = scatter(R,N,'filled');
-            title("Escala de cajas");
-            hold on;
-    
-            dtt = p.DataTipTemplate;
-            dtt.DataTipRows(1).Label = "Lb";
-            dtt.DataTipRows(1).Value = Lb;
-            dtt.DataTipRows(2).Label = "Nb";
-            dtt.DataTipRows(2).Value = Nb;
+            obj.draw_box_plot(iteraciones,valores);
         end
         %%%%%%%%%%
         
@@ -429,7 +331,8 @@ classdef NetworkFeatures < Features
         %Función para calcular el box-covering con el método maximal
         %excluded mass burning.
         function calculaMEMB(obj,matriz,nodos)
-            matriz(matriz~=0) = 1;
+            threshold = 0.7;
+            matriz(matriz>=threshold)=1;matriz(matriz<threshold)=0;
             G = graph(matriz);
             distancias = distances(G);
             tammat = size(matriz);
@@ -442,53 +345,77 @@ classdef NetworkFeatures < Features
                 boxes = {};
                 NCN = nodos;
                 while ~isempty(U)
-                    [p, p_box] = obj.maxexcmass(U,NCN,distancias,k); 
+                    [p, p_box] = obj.maxexcmass(U,NCN,distancias,k); %maxexcmass should return node with maximal value for em.
                     C(end+1) = p;
-                    boxes{end+1} = p;
                     NCN = NCN(NCN~=p);
+                    %calculate p_box should return nodes 'covered' by p
                     U = setdiff(U,p_box);
                 end
-                cdist = obj.calc_dists(nodos,C,distancias,k); 
-                C_bis = cdist(:,cdist(3,:)~=0);
-                cbtam = size(C_bis);
-                ctam = size(C);
-                for i=1:cbtam(2)
-                    smallers = cdist(:,cdist(3,:)<C_bis(3,i));
-                    stam = size(smallers);
-                    smaller = smallers(:,randi(stam(2)));
-                    for j=1:ctam(2)
-                        if ismember(smaller(2,:),boxes{j})
-                            boxes{j}(end+1) = C_bis(1,i);
-                        end
-                    end
-                end
+                boxes = obj.form_boxes_from_centers(C,nodos,distancias,k);
+                
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
             end
-            obj.boxCovering = valores;
-    
-            x = iteraciones;
-            y = obj.boxCovering(iteraciones);
-    
-            Lb = x;
-            Nb = y;
-    
-            N = log10(Nb)';
-            R = log10(Lb)';
-            figure;
-            set(gcf,'color',[1 1 1]);
-            set(gca, 'FontSize',15);
-            p = scatter(R,N,'filled');
-            title("Escala de cajas");
-            hold on;
-    
-            dtt = p.DataTipTemplate;
-            dtt.DataTipRows(1).Label = "Lb";
-            dtt.DataTipRows(1).Value = Lb;
-            dtt.DataTipRows(2).Label = "Nb";
-            dtt.DataTipRows(2).Value = Nb;
+            obj.draw_box_plot(iteraciones,valores);
         end
         %%%%%%%%%%
+        
+        %%%%%%%%%
+        function boxes = calculaREMCC(obj,matriz,nodos)
+            %this function defines k as the distance, not size of the box, much
+            %like other algorithms we'll see in this thesis
+            tammat = size(matriz);
+            threshold = 0.7;
+            matriz(matriz>=threshold)=1;matriz(matriz<threshold)=0;
+            G = graph(matriz);
+            distancias = distances(G);
+            distancias(distancias==0)=inf;
+            valores = [];
+            iteraciones = 1:1:tammat(1);
+            sh_paths = [];
+            for i=1:tammat(1)
+                sh_paths(end+1)= sum(distancias(i,distancias(i,:)~=inf))/(tammat(1)-1);
+            end
+            for k=1:tammat(1)
+                U = nodos; %list of uncovered nodes
+                C = []; %list of center nodes
+                boxes = {};
+                utam = size(U);
+                %distances already gives us average shortest distance path between
+                %nodes, so now we calculate excluded mass for all nodes,
+                while ~isempty(U)
+                    masses = obj.excmass(U,nodos,distancias,k); %returns list of masses of U on the first row
+                    %and number of node on the second row.
+                    if ~any(masses)
+                        maxnode = U(randi(length(U),1));
+                    else
+                        tamm = size(masses);
+                        maxf = 0;
+                        maxnode = 0;
+                        for n=1:tamm(2)
+                            f = masses(1,n)*sh_paths(1,n);
+                            if f > maxf
+                                maxf = f;
+                                maxnode = n;
+                            end
+                        end
+                    end
+                    
+                    C(end+1) = maxnode;
+                    maxnodeball = obj.seed_ball(maxnode,U,distancias,k);
+                    U = setdiff(U,maxnodeball);
+                end
+                %box forming of memb with all reached centers
+                index = 1:tammat(1)+1:tammat(1)*tammat(2);
+                distancias(index)=0;
+                boxes = obj.form_boxes_from_centers(C,nodos,distancias,k);
+                
+                num_boxes = size(boxes);
+                valores(k) = num_boxes(2);
+            end
+            obj.draw_box_plot(iteraciones,valores);
+        end
+        %%%%%%%%%
         
         %%%%%%%%%
         %Funcion para calcular el box-covering con el método random sequential
@@ -549,15 +476,20 @@ classdef NetworkFeatures < Features
                 valores(k) = num_boxes(2);
                 fprintf("numcajas en iteracion %d es %d \n",k,num_boxes(2));
             end
-            
+            obj.draw_box_plot(iteraciones,valores);
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        function draw_box_plot(obj,iteraciones,valores)
             obj.boxCovering = valores;
-    
+            
             x = iteraciones;
             y = obj.boxCovering(iteraciones);
-    
+            
             Lb = x;
             Nb = y;
-    
+            
             N = log10(Nb)';
             R = log10(Lb)';
             figure;
@@ -566,12 +498,41 @@ classdef NetworkFeatures < Features
             p = scatter(R,N,'filled');
             title("Escala de cajas");
             hold on;
-    
+            
             dtt = p.DataTipTemplate;
             dtt.DataTipRows(1).Label = "Lb";
             dtt.DataTipRows(1).Value = Lb;
             dtt.DataTipRows(2).Label = "Nb";
             dtt.DataTipRows(2).Value = Nb;
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        function ball = seed_ball(obj,node,nodes,distancias,k)
+            tamn=size(nodes);
+            ball = [];
+            ball(end+1) = node;
+            for i=1:tamn(2)
+                if node ~= nodes(1,i) && distancias(node,nodes(1,i)) <= k
+                    ball(end+1) = nodes(1,i);
+                end
+            end
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        function masses = excmass(obj,U,nodos,distancias,k)
+            tamu = size(U);
+            tamn = size(nodos);
+            masses = zeros(tamn);
+            indexes = U;
+            for i=1:tamu(2)
+                for j=1:tamu(2)
+                    if distancias(U(i),U(j)) <= k && j ~= i
+                        masses(U(i)) = masses(U(i)) + 1;
+                    end
+                end
+            end
         end
         %%%%%%%%%
         
@@ -614,6 +575,41 @@ classdef NetworkFeatures < Features
                 end
             end
             mindists = sortrows(mindists',3)';
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        function boxes = form_boxes_from_centers(obj,C,candidates,distancias,k)
+            boxes = {};
+            tn = size(candidates);
+            tc = size(C);
+            for i=1:tc(2)
+                boxes{end+1} = C(i);
+            end
+            mindists = [candidates;zeros(1,tn(2));zeros(1,tn(2))+k];
+            for i=1:tn(2)
+                for j=1:tc(2)
+                    if distancias(candidates(i),C(j)) <= mindists(3,i)
+                        mindists(3,i) = distancias(candidates(i),C(j));
+                        mindists(2,i) = C(j);
+                    end
+                end
+            end
+            mindists = sortrows(mindists',3)';
+            
+            C_bis = mindists(:,mindists(3,:)~=0);
+            cbtam = size(C_bis);
+            ctam = size(C);
+            for i=1:cbtam(2)
+                smallers = mindists(:,mindists(3,:)<C_bis(3,i));
+                stam = size(smallers);
+                smaller = smallers(:,randi(stam(2)));
+                for j=1:ctam(2)
+                    if ismember(smaller(2,:),boxes{j})
+                        boxes{j}(end+1) = C_bis(1,i);
+                    end
+                end
+            end
         end
         %%%%%%%%%
         
