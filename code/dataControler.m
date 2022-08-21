@@ -142,7 +142,9 @@ classdef dataControler < handle
         
         %Calculo de la escala de dimension fractal
         function calculaCompactBoxBurning(obj)
+             tStart = cputime;
              obj.red.calculaCompactBoxBurning();
+             tEnd = cputime - tStart;
         end
         
         %Calculo de la escala de dimension fractal con Greedy Coloring
@@ -173,6 +175,16 @@ classdef dataControler < handle
         %Calculo de la escala de dimension fractal con REMCC algorithm
         function calculaREMCC(obj)
             obj.red.calculaREMCC();
+        end
+        
+        %Calculo de la escala de dimension fractal con PSO algorithm
+        function calculaPSO(obj)
+            obj.red.calculaPSO();
+        end
+        
+        %Calculo de todos los algoritmos
+        function calculaTodos(obj)
+            obj.red.calculaTodos();
         end
         
         %Calculo de la dimensión fractal

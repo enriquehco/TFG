@@ -134,8 +134,7 @@ classdef BrainNetwork < handle
                 nombreNodo = nodos(1,i);
                 nodos(2,i) = obj.correspondenciaNodoId(nombreNodo);
             end
-            
-            obj.features.calculaCompactBoxBurning(obj.matriz,nodos);
+            obj.features.calculaCompactBoxBurning(obj.matriz,nodos,0);
         end
         
         %Funcion para calcular la dimension fractal (con Coloreado greedy)
@@ -148,7 +147,7 @@ classdef BrainNetwork < handle
 %                 nombreNodo = nodos(1,i);
 %                 nodos(2,i) = obj.correspondenciaNodoId(nombreNodo);
 %             end
-            obj.features.calculaGreedyColoring(obj.matriz,nodosfin);
+            obj.features.calculaGreedyColoring(obj.matriz,nodosfin,0);
         end
         
         %Funcion para calcular la dimension fractal (con Random Sequential)
@@ -160,7 +159,7 @@ classdef BrainNetwork < handle
                 nodos(2,i) = obj.correspondenciaNodoId(nombreNodo);
             end
             
-            obj.features.calculaRandomSequential(obj.matriz,nodos);
+            obj.features.calculaRandomSequential(obj.matriz,nodos,0);
         end
         
         %Funcion para calcular la dimension fractal (con Merge algorithm)
@@ -172,7 +171,7 @@ classdef BrainNetwork < handle
                 nombreNodo = nodos(1,i);
                 nodos(2,i) = i;
             end
-            obj.features.calculaMergeAlgorithm(obj.matriz,othernodes);
+            obj.features.calculaMergeAlgorithm(obj.matriz,othernodes,0);
         end
         
         %Funcion para calcular la dimension fractal (con OBCA)
@@ -180,7 +179,7 @@ classdef BrainNetwork < handle
             nodos = obj.getNombreNodos();
             limit = size(nodos);
             othernodes = [1:1:limit(2)];
-            obj.features.calculaOBCA(obj.matriz,othernodes);
+            obj.features.calculaOBCA(obj.matriz,othernodes,0);
         end
         
         %Funcion para calcular la dimension fractal (con MEMB)
@@ -188,7 +187,7 @@ classdef BrainNetwork < handle
             nodos = obj.getNombreNodos();
             limit = size(nodos);
             othernodes = [1:1:limit(2)];
-            obj.features.calculaMEMB(obj.matriz,othernodes);
+            obj.features.calculaMEMB(obj.matriz,othernodes,0);
         end
         
         %Funcion para calcular la dimension fractal (con REMCC)
@@ -196,9 +195,49 @@ classdef BrainNetwork < handle
             nodos = obj.getNombreNodos();
             limit = size(nodos);
             othernodes = [1:1:limit(2)];
-            obj.features.calculaREMCC(obj.matriz,othernodes);
+            obj.features.calculaREMCC(obj.matriz,othernodes,0);
         end
         
+        %Funcion para calcular la dimension fractal (con PSO)
+        function calculaPSO(obj)
+            nodos = obj.getNombreNodos();
+            limit = size(nodos);
+            othernodes = [1:1:limit(2)];
+            obj.features.calculaPSO(obj.matriz,othernodes,0,4,4,0.8,0.8);
+        end
+        
+        %Función para calcular y mostrar las cajas de todos los algoritmos
+        %lado a lado
+        function calculaTodos(obj)
+            nodos = obj.getNombreNodos();
+            limit = size(nodos);
+            nodoscbb = nodos;
+            for i=1:limit(2)
+                nombreNodo = nodoscbb(1,i);
+                nodoscbb(2,i) = obj.correspondenciaNodoId(nombreNodo);
+            end
+            nodosfin = [1:limit(2)];
+            nodosfin = nodosfin.';
+            othernodes = [1:1:limit(2)];
+            tiledlayout(2,4);
+            obj.features.calculaCompactBoxBurning(obj.matriz,nodoscbb,1);
+            title('CBB');
+            obj.features.calculaGreedyColoring(obj.matriz,nodosfin,1);            
+            title('Greedy Coloring');
+            obj.features.calculaRandomSequential(obj.matriz,nodoscbb,1);           
+            title('Random Sequential');
+            obj.features.calculaMergeAlgorithm(obj.matriz,othernodes,1);           
+            title('Merge Algorithm');
+            obj.features.calculaOBCA(obj.matriz,othernodes,1);           
+            title('OBCA');
+            obj.features.calculaMEMB(obj.matriz,othernodes,1);           
+            title('MEMB');
+            obj.features.calculaREMCC(obj.matriz,othernodes,1);           
+            title('REMCC');
+            obj.features.calculaPSO(obj.matriz,othernodes,1,4,4,0.8,0.8);           
+            title('PSO');
+            
+        end
         %Función para cargar el archivo de coordenadas 3D
         function cargaCoordenadas3D(obj)
             if(isempty(obj.coordenadas3D))
