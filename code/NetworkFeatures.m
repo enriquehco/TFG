@@ -90,7 +90,7 @@ classdef NetworkFeatures < Features
         end
         
         %BOX-COVERING
-        function  calculaCompactBoxBurning(obj,matriz,nodos)
+        function  calculaCompactBoxBurning(obj,matriz,nodos,combo)
             limit = size(matriz);
             valores = [];
             
@@ -143,26 +143,36 @@ classdef NetworkFeatures < Features
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
             end
-            obj.draw_box_plot(iteraciones,valores);
+            if combo == 0
+                obj.draw_box_plot(iteraciones,valores);
+            else
+                obj.draw_combo_plot(iteraciones,valores);
+            end
         end
         
         %Cálculo de dimension fractal con el algoritmo Greedy Coloring
-        function devuelve = calculaGreedyColoring(obj, matriz, nodos, aux_g, neigh, tb)
+        function devuelve = calculaGreedyColoring(obj, matriz, nodos,combo, tb, aux_g, neigh)
             limit = size(matriz);
             threshold = 0.5;
             valores = [];
             iteraciones = [1:1:limit(1)];
             matriz(matriz>=threshold)=1;matriz(matriz<threshold)=0; 
-            if ismember(nargin,[2 3])
+            nargin
+            if nargin == 4
                 onetime=false;
             else
-                onetime=true;
-                G_b = aux_g;
-                neighbors = neigh;
+                if ~exist('neigh','var')
+                    onetime = true;
+                    [G_b,neighbors] = obj.auxiliary_graph(matriz,tb);
+                else
+                    onetime=true;
+                    G_b = aux_g;
+                    neighbors = neigh;
+                end
             end
             for k=1:limit(1)
                 if ~onetime
-                    [G_b,neighbors] = obj.auxiliary_graph(matriz,nodos,k);
+                    [G_b,neighbors] = obj.auxiliary_graph(matriz,k);
                 else
                     k = tb;
                 end
@@ -181,19 +191,23 @@ classdef NetworkFeatures < Features
                 max_col = max(colors);
                 valores(k) = max_col;
                 if onetime
-                    devuelve = max_col;
+                    devuelve = colors;
                     break
                 end
             end
             if ~onetime
-                obj.draw_box_plot(iteraciones,valores);
+                if combo == 0
+                    obj.draw_box_plot(iteraciones,valores);
+                elseif  combo == 1
+                    obj.draw_combo_plot(iteraciones,valores);
+                end
             end
         end
         
         %%%%%%%%%
         %Función para calcular el box-covering con el método Merge
         %Algorithm
-        function calculaMergeAlgorithm(obj,matriz,nodos)
+        function calculaMergeAlgorithm(obj,matriz,nodos,combo)
            limit = size(matriz);
            valores = [];
            iteraciones = 1:1:limit(1);
@@ -245,7 +259,11 @@ classdef NetworkFeatures < Features
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
            end
-           obj.draw_box_plot(iteraciones,valores);
+           if combo == 0
+               obj.draw_box_plot(iteraciones,valores);
+           else
+               obj.draw_combo_plot(iteraciones,valores);
+           end
         end
         %%%%%%%%%
         
@@ -253,7 +271,7 @@ classdef NetworkFeatures < Features
         %Funcion para calcular el box-covering con el método overlapping
         %box-covering algorithm
         
-        function calculaOBCA(obj,matriz,nodos)
+        function calculaOBCA(obj,matriz,nodos,combo)
             limit = size(matriz);
             valores = [];
             iteraciones = 1:1:limit(1);
@@ -323,14 +341,18 @@ classdef NetworkFeatures < Features
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
             end
-            obj.draw_box_plot(iteraciones,valores);
+            if combo == 0
+                obj.draw_box_plot(iteraciones,valores);
+            else
+                obj.draw_combo_plot(iteraciones,valores);
+            end
         end
         %%%%%%%%%%
         
         %%%%%%%%%%
         %Función para calcular el box-covering con el método maximal
         %excluded mass burning.
-        function calculaMEMB(obj,matriz,nodos)
+        function calculaMEMB(obj,matriz,nodos,combo)
             threshold = 0.7;
             matriz(matriz>=threshold)=1;matriz(matriz<threshold)=0;
             G = graph(matriz);
@@ -356,12 +378,16 @@ classdef NetworkFeatures < Features
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
             end
-            obj.draw_box_plot(iteraciones,valores);
+            if combo == 0
+                obj.draw_box_plot(iteraciones,valores);
+            else
+                obj.draw_combo_plot(iteraciones,valores);
+            end
         end
         %%%%%%%%%%
         
         %%%%%%%%%
-        function boxes = calculaREMCC(obj,matriz,nodos)
+        function boxes = calculaREMCC(obj,matriz,nodos,combo)
             %this function defines k as the distance, not size of the box, much
             %like other algorithms we'll see in this thesis
             tammat = size(matriz);
@@ -413,13 +439,17 @@ classdef NetworkFeatures < Features
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
             end
-            obj.draw_box_plot(iteraciones,valores);
+            if combo == 0
+                obj.draw_box_plot(iteraciones,valores);
+            else
+                obj.draw_combo_plot(iteraciones,valores);
+            end
         end
         %%%%%%%%%
         
         %%%%%%%%%
         %Funcion para calcular el box-covering con el método random sequential
-        function calculaRandomSequential(obj,matriz,nodos)
+        function calculaRandomSequential(obj,matriz,nodos,combo)
         %RANDOMSEQUENTIAL Summary of this function goes here
         %   Detailed explanation goes here
             limit = size(matriz);
@@ -468,15 +498,117 @@ classdef NetworkFeatures < Features
                     
                     boxes{1,cont} = box;
                     cont = cont+1;
-                    fprintf("la caja %d contiene \n", k);
-                    box
                 end
                 
                 num_boxes = size(boxes);
                 valores(k) = num_boxes(2);
                 fprintf("numcajas en iteracion %d es %d \n",k,num_boxes(2));
             end
-            obj.draw_box_plot(iteraciones,valores);
+            if combo == 0
+                obj.draw_box_plot(iteraciones,valores);
+            elseif combo == 1
+                obj.draw_combo_plot(iteraciones,valores);
+            end
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        %Función para calcular el box covering con Particle Swarm
+        %Optimization
+        
+        function boxes = calculaPSO(obj,matriz,nodos,combo,g,p,c1,c2)
+            %operator (+) is defined as the interger difference of two numbers
+            G = graph(matriz);
+            distancias = distances(G);
+            tammat = size(matriz);
+            valores = [];
+            iteraciones = 1:1:tammat(1);
+            %for k=1:tammat(1)
+            for k=1:tammat(1)
+                boxes = {};
+                P = []; %P stores greedily selected colors for each 'particle', meaning
+                %apply greedy algorithm to the initial matriz to have an
+                %initial positioning of nodes,for n size of nodes
+                gbest = [];
+                gbestsize = 1000;
+                for i=1:p
+                    P(end+1,:) = obj.calculaGreedyColoring(matriz,nodos,0,k); %this returns list of colors of each node
+                    nboxes = max(P(end));
+                    if ~isempty(gbest) || (nboxes < gbestsize)
+                        gbest = P(end,:);
+                        gbestsize = nboxes;
+                    end
+                end
+                V = zeros(size(P)); %V stores the velocity of each node (chance to change assigned box
+                pbest = P;
+                for j=1:g
+                    for n=1:p
+                        %construct boxes
+                        boxes = {};
+                        maxcolor = max(P(n,:));
+                        for l=1:maxcolor
+                            boxes{l} = find(P(n,:)==l);
+                        end
+                        
+                        %leverage bla bla bla
+                        for m=1:tammat(1)
+                            omega = rand;
+                            r1 = rand;
+                            r2 = rand;
+                            %update speeed
+                            V(n,m) = obj.sig(omega*V(n,m)+c1*r1*~isempty(obj.equalbox(pbest(n,m),P(n,m)))+c2*r2*~isempty(obj.equalbox(gbest(m),P(n,m))));
+                            
+                            if V(n,m) == 1
+                                orig = P(n,m);
+                                P(n,m) = obj.nbest(m,P(n,m),boxes,distancias,k);
+                                
+                                if orig ~= P(n,m)
+                                    manbox = boxes{orig};
+                                    manbox(manbox==m)=[];
+                                    boxes{orig} = manbox;
+                                    newbox = boxes{P(n,m)};
+                                    newbox(end+1) = m;
+                                    boxes{P(n,m)} = newbox;
+                                end
+                            end
+                        end
+                    end
+                end
+                num_boxes = size(boxes);
+                valores(k) = num_boxes(2);
+            end
+            if combo == 0
+                obj.draw_box_plot(iteraciones,valores);
+            else
+                obj.draw_combo_plot(iteraciones,valores);
+            end
+        end
+
+
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        function draw_combo_plot(obj,iteraciones,valores)
+            obj.boxCovering = valores;
+            
+            x = iteraciones;
+            y = obj.boxCovering(iteraciones);
+            
+            Lb = x;
+            Nb = y;
+            
+            N = log10(Nb)';
+            R = log10(Lb)';
+            nexttile
+            set(gcf,'color',[1 1 1]);
+            set(gca, 'FontSize',15);
+            p = scatter(R,N,'filled');            
+            
+            dtt = p.DataTipTemplate;
+            dtt.DataTipRows(1).Label = "Lb";
+            dtt.DataTipRows(1).Value = Lb;
+            dtt.DataTipRows(2).Label = "Nb";
+            dtt.DataTipRows(2).Value = Nb;
         end
         %%%%%%%%%
         
@@ -575,6 +707,48 @@ classdef NetworkFeatures < Features
                 end
             end
             mindists = sortrows(mindists',3)';
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        %Funcion signo para PSO
+        function retval = sig(obj,z)
+            compare = 1/(1+exp(-z));
+            if rand < compare
+                retval = 1;
+            else
+                retval = 0;
+            end
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        %Funcion para comparar dos cajas (desordenadas)
+        function dev = equalbox(obj,b1,b2)
+            if isempty(setdiff(b1,b2)) && isempty(setdiff(b2,b1))
+                dev = [];
+            else
+                dev = [setdiff(b1,b2),setdiff(b2,b1)];
+            end
+        end
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        function retval = nbest(obj,n,x,B,distances,lb)
+            retval = x;
+            while ~isempty(B)
+                ind = randi(size(B));
+                xk = B{ind};
+                B(ind) = [];
+                if x == ind
+                    continue
+                end
+                f = arrayfun(@(z) distances(n,z)<lb, xk);
+                if ~ismember(0,f)
+                    retval = ind;
+                    break
+                end
+            end
         end
         %%%%%%%%%
         
@@ -702,12 +876,12 @@ classdef NetworkFeatures < Features
         %%%%%%%%%
         
         %Cálculo de la matriz (grafo) auxiliar
-        function [agraph,neighbors] = auxiliary_graph(obj,matriz,nodos,lb)
+        function [agraph,neighbors] = auxiliary_graph(obj,matriz,lb)
             neighbors = {};
             limit = size(matriz);
             edges = [0 0];
             nlist = [0 0];
-            G = graph(matriz)
+            G = graph(matriz);
             distancias = distances(G);
             
             for v1=1:limit(2)
