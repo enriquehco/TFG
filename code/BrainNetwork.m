@@ -206,6 +206,14 @@ classdef BrainNetwork < handle
             obj.features.calculaPSO(obj.matriz,othernodes,0,4,4,0.8,0.8);
         end
         
+        %Funcion para calcular la dimension fractal (con DE)
+        function calculaDE(obj)
+            nodos = obj.getNombreNodos();
+            limit = size(nodos);
+            othernodes = [1:1:limit(2)];
+            obj.features.calculaDE(obj.matriz,othernodes,0,4,0.8,0.8,2);
+        end
+        
         %Función para calcular y mostrar las cajas de todos los algoritmos
         %lado a lado
         function calculaTodos(obj)
