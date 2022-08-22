@@ -156,45 +156,53 @@ classdef NetworkFeatures < Features
             threshold = 0.5;
             valores = [];
             iteraciones = [1:1:limit(1)];
-            matriz(matriz>=threshold)=1;matriz(matriz<threshold)=0; 
-            nargin
+            matriz(matriz>=threshold)=1;matriz(matriz<threshold)=0;
             if nargin == 4
                 onetime=false;
+                for k=1:limit(1)
+                    [G_b,neighbors] = obj.auxiliary_graph(matriz,k);
+                    boxes = {};
+                    cont = 1;
+                    colors = zeros(1,limit(1));
+                    for i=1:limit(1)
+                        curr_neigh = neighbors{i};
+                        for j=1:limit(1)
+                            if ~ismember(j,colors(curr_neigh))
+                                colors(i) = j;
+                                break
+                            end
+                        end
+                    end
+                    max_col = max(colors);
+                    valores(k) = max_col;
+                end
             else
+                onetime = true;
                 if ~exist('neigh','var')
-                    onetime = true;
                     [G_b,neighbors] = obj.auxiliary_graph(matriz,tb);
                 else
-                    onetime=true;
                     G_b = aux_g;
                     neighbors = neigh;
-                end
-            end
-            for k=1:limit(1)
-                if ~onetime
-                    [G_b,neighbors] = obj.auxiliary_graph(matriz,k);
-                else
-                    k = tb;
                 end
                 boxes = {};
                 cont = 1;
                 colors = zeros(1,limit(1));
+                indexes = nodos;
                 for i=1:limit(1)
-                    curr_neigh = neighbors{i};
+                    curr_ind = indexes(i);
+                    curr_neigh = neighbors{curr_ind};
                     for j=1:limit(1)
                         if ~ismember(j,colors(curr_neigh))
-                            colors(i) = j;
+                            colors(curr_ind) = j;
                             break
                         end
                     end
                 end
-                max_col = max(colors);
-                valores(k) = max_col;
                 if onetime
                     devuelve = colors;
-                    break
                 end
             end
+
             if ~onetime
                 if combo == 0
                     obj.draw_box_plot(iteraciones,valores);
@@ -585,6 +593,85 @@ classdef NetworkFeatures < Features
         end
 
 
+        %%%%%%%%%
+        
+        %%%%%%%%%
+        %Differential Evolution Algorithm
+        function boxes = calculaDE(obj,matriz,nodos,combo,p,f,c,g)
+            N = size(matriz);
+            G = graph(matriz);
+            valores = [];
+            iteraciones = 1:1:N(1);
+            for tb=1:N(1)
+                X = rand(1,N(2),p);
+                best = N(1);
+                for i=2:g
+                    vayjay = [];
+                    for j=1:p
+                        T = randperm(p,3);
+                        while ismember(j,T)
+                            T = randperm(p,3);
+                        end
+                        if p~=1
+                            vayjay(end+1,:) = X(end,:,T(1)) + f*(X(end,:,T(2)) - X(end,:,T(3)));
+                        else
+                            vayjay(end+1,:) = X(end,:,T(1)) + f*(X(end,:,T(2)) - X(end,:,T(3)));
+                        end
+                    end
+                    U = [];
+                    for j=1:p
+                        u = [];
+                        mut_j = randi(N(1));
+                        for k=1:N(1)
+                            if rand() < c || k == mut_j
+                                u(end+1) = vayjay(j,k);
+                            else
+                                u(end+1) = X(end,k,j);
+                            end
+                        end
+                        U(end+1,:,:) = u;
+                    end
+                    x = [];
+                    for j=1:p
+                        %order nodes according to U(j)
+                        orderU = U(j,i-1,:);
+                        orderU = orderU(:)';
+                        sortlistU = [nodos;orderU];
+                        sortlistU = sortrows(sortlistU',2)';
+                        
+                        orderX = X(i-1,:,j);
+                        orderX = orderX(:)';
+                        sortlistX = [nodos;orderX];
+                        sortlistX = sortrows(sortlistX',2)';
+                        %then give that order to greedy coloring and let it do the
+                        %thing
+                        f1 = obj.calculaGreedyColoring(matriz,sortlistU(1,:),0,tb);
+                        f2 = obj.calculaGreedyColoring(matriz,sortlistX(1,:),0,tb);
+                        %then see which algorithm performed better, (less boxes?)
+                        
+                        if max(f1) < best
+                            best = max(f1);
+                        elseif max(f2) < best
+                            best = max(f2);
+                        end
+                        x = [];
+                        if f1 < f2
+                            x = U(j,i-1,:);
+                        else
+                            x = X(i-1,:,j);
+                        end
+                        X(i,:,j) = x(:);
+                    end
+                end
+                boxes = best;
+                valores(tb) = boxes;
+            end
+            if combo == 0
+                obj.draw_box_plot(iteraciones,valores);
+            else
+                obj.draw_combo_plot(iteraciones,valores);
+            end
+        end
         %%%%%%%%%
         
         %%%%%%%%%

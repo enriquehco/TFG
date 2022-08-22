@@ -182,6 +182,11 @@ classdef dataControler < handle
             obj.red.calculaPSO();
         end
         
+        %Calculo de la escala de dimension fractal con DE algorithm
+        function calculaDE(obj)
+            obj.red.calculaDE();
+        end
+        
         %Calculo de todos los algoritmos
         function calculaTodos(obj)
             obj.red.calculaTodos();
